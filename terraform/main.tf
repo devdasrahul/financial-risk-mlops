@@ -69,6 +69,7 @@ resource "aws_s3_bucket_public_access_block" "artifacts_block_public" {
 resource "aws_ecr_repository" "inference_service" {
   name                 = "${var.project_name}-inference"
   image_tag_mutability = "IMMUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true

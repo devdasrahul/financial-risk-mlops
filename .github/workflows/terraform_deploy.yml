@@ -89,8 +89,11 @@ jobs:
 
       - name: Terraform Destroy (Teardown)
         if: ${{ github.event.inputs.action == 'destroy' }}
-        working-directory: terraform
-        run: terraform destroy -auto-approve
+        run: |
+          cd terraform
+          terraform destroy -auto-approve || true
+          cd ..
+          python scripts/aws_cleanup_orphans.py
 
       - name: Push Remote Terraform State
         if: always() && github.event.inputs.action != 'cleanup-only'
