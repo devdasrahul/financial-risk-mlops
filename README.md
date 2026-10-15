@@ -6,9 +6,24 @@
 [![AWS Step Functions](https://img.shields.io/badge/AWS-Step%20Functions-FF9900.svg)](https://aws.amazon.com/step-functions/)
 [![Terraform](https://img.shields.io/badge/Terraform-1.7+-844FBA.svg)](https://www.terraform.io)
 [![Aqua Trivy](https://img.shields.io/badge/Trivy-DevSecOps%20Pass-brightgreen.svg)](https://github.com/aquasecurity/trivy)
+[![YouTube Demo](https://img.shields.io/badge/YouTube-Video%20Walkthrough-red.svg?logo=youtube)](https://youtu.be/8rzG1BEIwrk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A production-grade, end-to-end MLOps and LLMOps platform engineered for financial risk and payment fraud detection. It scores live transactions in single-digit milliseconds, explains high-risk flags using an agentic compliance triage layer grounded in AML/KYC regulatory policy, continuously monitors feature distribution drift, and automatically retrains, audits, and redeploys models via AWS Step Functions—all provisioned with declarative Terraform and protected with shift-left DevSecOps security scanning.
+
+---
+
+## 🎥 Video Walkthrough & Live Architecture Demo
+
+[![Watch the Live Demo](https://img.youtube.com/vi/8rzG1BEIwrk/maxresdefault.jpg)](https://youtu.be/8rzG1BEIwrk)
+
+> 📺 **[Watch the Complete Live Architecture & AWS Demo on YouTube](https://youtu.be/8rzG1BEIwrk)**  
+> **Key highlights covered in the video:**
+> - **Live Microservice & 1.1ms Latency:** Querying `/health` and scoring transactions on live AWS ECS Fargate behind an Application Load Balancer.
+> - **Local TreeSHAP Attributions:** Real-time numerical feature attribution explaining the drivers behind high-risk fraud scores.
+> - **Agentic AML/KYC Compliance Triage:** Converting TreeSHAP contributions into auditable regulatory SAR memos with FinCEN policy citations via Amazon Bedrock AgentCore.
+> - **Closed-Loop Retraining on AWS Step Functions:** Demonstrating automated EventBridge drift detection triggering autonomous retraining, demographic fairness audit gates, and zero-downtime ECS rolling updates.
+> - **Shift-Left DevSecOps Pipeline:** Aqua Security Trivy container and IaC scanning, Ruff linting, Pytest test suites, and declarative Terraform provisioning.
 
 ---
 
