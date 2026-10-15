@@ -1,8 +1,8 @@
 {
   "model_name": "fraud-detection-xgb",
-  "promoted_version": 2,
+  "promoted_version": 3,
   "promoted": true,
   "challenger_f1": 1.0,
-  "champion_f1": 0.0,
-  "timestamp": "2026-10-15T14:29:12.473110"
+  "champion_f1": 1.0,
+  "timestamp": "2026-10-15T16:22:33.902642"
 }

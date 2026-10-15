@@ -1,9 +1,9 @@
 # Amazon SageMaker Model Card: Fraud Detection Risk Engine
 
-**Model Name:** `fraud-detection-xgb`  
-**Model Version:** `1.0.0`  
-**Audited Date:** `2026-10-15T14:28:06.116527`  
-**Dataset Lineage Hash:** `835cfe7ca878a1a1287413a85a8dc26a480013da32ff052dcc259c29fb7fae0d`  
+**Model Name:** `fraud-detection-xgb`
+**Model Version:** `1.0.0`
+**Audited Date:** `2026-10-15T16:22:04.226884`
+**Dataset Lineage Hash:** `835cfe7ca878a1a1287413a85a8dc26a480013da32ff052dcc259c29fb7fae0d`
 **Compliance Approval Status:** `APPROVED`
 
 ---
