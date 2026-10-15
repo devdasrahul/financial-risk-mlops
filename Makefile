@@ -38,8 +38,14 @@ setup:
 
 local-up:
 	@echo "==> Starting local MLOps services via Docker Compose..."
-	docker compose up -d minio minio-create-buckets postgres mlflow prometheus grafana
-	@echo "==> MLflow: http://localhost:5000 | MinIO: http://localhost:9001 | Grafana: http://localhost:3000"
+	docker compose up -d
+	@echo "==> Services available:"
+	@echo "    - MLflow Tracking:    http://localhost:5000"
+	@echo "    - MinIO S3 Console:   http://localhost:9001"
+	@echo "    - Grafana Dashboards: http://localhost:3000"
+	@echo "    - Prometheus Metrics: http://localhost:9090"
+	@echo "    - FastAPI Inference:  http://localhost:8000"
+	@echo "    - Evidently Reports:  http://localhost:8001"
 
 local-down:
 	@echo "==> Stopping local Docker services..."

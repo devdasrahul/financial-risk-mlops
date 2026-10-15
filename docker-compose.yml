@@ -152,6 +152,34 @@ services:
       timeout: 5s
       retries: 3
 
+  # -------------------------------------------------------------
+  # Evidently AI Monitoring Service & Drift Report Server
+  # -------------------------------------------------------------
+  evidently-monitoring:
+    build:
+      context: .
+      dockerfile: src/inference/Dockerfile
+    container_name: mlops_evidently_monitoring
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    depends_on:
+      - inference-service
+    environment:
+      - ENV=local
+      - S3_BUCKET_NAME=fraud-data-bucket
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadminpassword
+      - AWS_ENDPOINT_URL=http://minio:9000
+    volumes:
+      - ./reports:/app/reports
+      - ./data:/app/data
+    command: >
+      /bin/sh -c "
+      python -m src.monitoring.drift_detector --reference-path data/reference_data.parquet --current-path data/drifted_stream.parquet --output-dir reports || true;
+      python -m http.server 8001 --directory reports
+      "
+
 volumes:
   minio_data:
   postgres_data:

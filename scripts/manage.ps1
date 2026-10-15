@@ -76,7 +76,14 @@ switch ($Command.ToLower()) {
     }
     "local-up" {
         Write-Host "==> Starting local Docker Compose services..." -ForegroundColor Green
-        docker compose up -d minio minio-create-buckets postgres mlflow prometheus grafana
+        docker compose up -d
+        Write-Host "==> Local Stack Services Available:" -ForegroundColor Cyan
+        Write-Host "    - MLflow Tracking:    http://localhost:5000"
+        Write-Host "    - MinIO S3 Console:   http://localhost:9001 (minioadmin / minioadminpassword)"
+        Write-Host "    - Grafana Dashboards: http://localhost:3000 (admin / admin)"
+        Write-Host "    - Prometheus Metrics: http://localhost:9090"
+        Write-Host "    - FastAPI Inference:  http://localhost:8000"
+        Write-Host "    - Evidently Reports:  http://localhost:8001"
     }
     "local-down" {
         Write-Host "==> Stopping local Docker Compose services..." -ForegroundColor Yellow
