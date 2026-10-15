@@ -1,6 +1,6 @@
 # Master AI Build Prompt: Closed-Loop Financial Risk MLOps & Agentic Compliance Platform on AWS
 
-Copy and paste the master prompt below into an AI coding assistant (such as Cursor, Claude Code, Windsurf, GitHub Copilot, or Gemini) to generate the complete, production-grade portfolio repository tailored for the **UST MLOps Engineer (ML Engineer I — Job ID: 634702)** role.
+Copy and paste the master prompt below into an AI coding assistant (such as Cursor, Claude Code, Windsurf, GitHub Copilot, or Gemini) to generate the complete, production-grade portfolio repository demonstrating enterprise MLOps & LLMOps architecture.
 
 ## Part 1: Master System & Architecture Prompt (Copy-Paste Block)
 
@@ -133,9 +133,9 @@ Proceed to Phase 5. Generate the complete, production-ready code for:
 
 ```
 
-## Part 3: Quick Reference Matrix of Prompt Coverage vs. UST Job ID 634702
+## Part 3: Quick Reference Matrix of Architecture Capabilities vs. Enterprise Production Standards
 
-| **UST Job Requirement** | **Where the Prompt Implements It** | **Interview Artifact Produced** | 
+| **Core MLOps Capability** | **Where the Architecture Implements It** | **Production Artifact Produced** | 
 | **Automate model training, testing, deployment & monitoring** | `statemachine/mlops_retraining_pipeline.asl.json` & `.github/workflows/ci_cd_devsecops.yml` | Visual Step Functions workflow & automated GitHub Actions pipeline | 
 | **Model versioning, experiment tracking & model registry** | `src/training/train_xgboost.py` & `src/governance/promote_model.py` | [MLflow Tracking](https://www.google.com/search?q=https%3A%2F%2Fmlflow.org%2Fdocs%2Flatest%2Fml%2Ftracking%2F) UI & `@production` Champion/Challenger registry | 
 | **Monitor model performance, drift & operational health** | `src/monitoring/drift_detector.py` & `src/monitoring/prometheus.yml` | [Evidently AI](https://www.google.com/search?q=https%3A%2F%2Fdocs.evidentlyai.com%2Fmetrics%2Fpreset_data_drift) HTML drift report, [Prometheus](https://www.google.com/search?q=https%3A%2F%2Fprometheus.io%2Fdocs%2Fintroduction%2Foverview%2F) metrics & [Amazon EventBridge](https://www.google.com/search?q=https%3A%2F%2Fdocs.aws.amazon.com%2Feventbridge%2Flatest%2Fuserguide%2Feb-what-is.html) rule | 
