@@ -1,0 +1,17 @@
+{
+  "event_type": "FraudModelDriftDetected",
+  "timestamp": "2026-10-15T09:05:58.075550+00:00",
+  "drift_share": 0.875,
+  "drifted_features": [
+    "transaction_amount",
+    "card_velocity_1h",
+    "card_velocity_24h",
+    "distance_from_home_km",
+    "merchant_risk_score",
+    "device_trust_score",
+    "account_age_days"
+  ],
+  "dataset_drift_detected": true,
+  "trigger_source": "EvidentlyAIDriftMonitor",
+  "action_required": "InitiateStepFunctionsRetrainingPipeline"
+}

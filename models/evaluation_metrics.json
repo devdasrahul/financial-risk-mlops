@@ -1,0 +1,13 @@
+{
+  "f1_score": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "pr_auc": 1.0,
+  "roc_auc": 1.0,
+  "optimal_threshold": 0.25,
+  "false_positive_rate": 0.0,
+  "true_positives": 67,
+  "false_positives": 0,
+  "true_negatives": 2183,
+  "false_negatives": 0
+}

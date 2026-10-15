@@ -1,0 +1,13 @@
+{
+  "card_velocity_1h": 7.019970893859863,
+  "card_velocity_24h": 1.852715015411377,
+  "merchant_risk_score": 0.2250467985868454,
+  "transaction_amount": 0.0,
+  "distance_from_home_km": 0.0,
+  "is_international": 0.0,
+  "device_trust_score": 0.0,
+  "account_age_days": 0.0,
+  "amount_per_velocity_1h": 0.0,
+  "velocity_ratio_1h_to_24h": 0.0,
+  "composite_risk_indicator": 0.0
+}

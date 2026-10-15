@@ -1,0 +1,266 @@
+{
+  "Comment": "AWS Step Functions State Machine: Closed-Loop Automated Model Retraining, Clarify Governance Gate & ECS Fargate Deployment",
+  "StartAt": "ValidateDatasetIntegrity",
+  "TimeoutSeconds": 7200,
+  "States": {
+    "ValidateDatasetIntegrity": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ValidateFraudDatasetSchema",
+        "Payload": {
+          "ExecutionId.$": "$$.Execution.Id",
+          "DatasetS3Uri.$": "$.DatasetS3Uri"
+        }
+      },
+      "ResultPath": "$.ValidationResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.ErrorDetails",
+          "Next": "PipelineFailureRollback"
+        }
+      ],
+      "Next": "TrainChampionCandidateModel"
+    },
+    "TrainChampionCandidateModel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",
+      "Parameters": {
+        "TrainingJobName.$": "States.Format('fraud-xgb-retrain-{}', $$.Execution.Name)",
+        "AlgorithmSpecification": {
+          "TrainingImage": "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1",
+          "TrainingInputMode": "File"
+        },
+        "RoleArn": "arn:aws:iam::123456789012:role/SageMakerExecutionRole",
+        "InputDataConfig": [
+          {
+            "ChannelName": "train",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri.$": "$.TrainingDataUri",
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            },
+            "ContentType": "application/x-parquet"
+          },
+          {
+            "ChannelName": "validation",
+            "DataSource": {
+              "S3DataSource": {
+                "S3DataType": "S3Prefix",
+                "S3Uri.$": "$.ValidationDataUri",
+                "S3DataDistributionType": "FullyReplicated"
+              }
+            },
+            "ContentType": "application/x-parquet"
+          }
+        ],
+        "OutputDataConfig": {
+          "S3OutputPath": "s3://fraud-detection-mlops-artifacts/models/"
+        },
+        "ResourceConfig": {
+          "InstanceCount": 1,
+          "InstanceType": "ml.m5.xlarge",
+          "VolumeSizeInGB": 30
+        },
+        "StoppingCondition": {
+          "MaxRuntimeInSeconds": 3600
+        },
+        "HyperParameters": {
+          "max_depth": "5",
+          "learning_rate": "0.08",
+          "n_estimators": "150",
+          "eval_metric": "aucpr",
+          "scale_pos_weight": "32.0",
+          "objective": "binary:logistic"
+        }
+      },
+      "ResultPath": "$.TrainingJobOutput",
+      "Retry": [
+        {
+          "ErrorEquals": ["SageMaker.AmazonSageMakerException"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.ErrorDetails",
+          "Next": "PipelineFailureRollback"
+        }
+      ],
+      "Next": "EvaluateBiasAndExplainability"
+    },
+    "EvaluateBiasAndExplainability": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sagemaker:createProcessingJob.sync",
+      "Parameters": {
+        "ProcessingJobName.$": "States.Format('clarify-audit-{}', $$.Execution.Name)",
+        "AppSpecification": {
+          "ImageUri": "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-clarify:latest"
+        },
+        "RoleArn": "arn:aws:iam::123456789012:role/SageMakerExecutionRole",
+        "ProcessingInputs": [
+          {
+            "InputName": "dataset",
+            "S3Input": {
+              "S3Uri.$": "$.TestDataUri",
+              "LocalPath": "/opt/ml/processing/input/data",
+              "S3DataType": "S3Prefix",
+              "S3InputMode": "File"
+            }
+          }
+        ],
+        "ProcessingOutputConfig": {
+          "Outputs": [
+            {
+              "OutputName": "analysis_result",
+              "S3Output": {
+                "S3Uri": "s3://fraud-detection-mlops-artifacts/clarify-output/",
+                "LocalPath": "/opt/ml/processing/output",
+                "S3UploadMode": "EndOfJob"
+              }
+            }
+          ]
+        },
+        "ProcessingResources": {
+          "ClusterConfig": {
+            "InstanceCount": 1,
+            "InstanceType": "ml.m5.large",
+            "VolumeSizeInGB": 20
+          }
+        }
+      },
+      "ResultPath": "$.GovernanceResult",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.ErrorDetails",
+          "Next": "PipelineFailureRollback"
+        }
+      ],
+      "Next": "GovernanceEvaluationGate"
+    },
+    "GovernanceEvaluationGate": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.GovernanceResult.FairnessPassed",
+              "BooleanEquals": true
+            },
+            {
+              "Variable": "$.GovernanceResult.F1Score",
+              "NumericGreaterThanEquals": 0.80
+            }
+          ],
+          "Next": "PromoteModelToRegistry"
+        }
+      ],
+      "Default": "RejectBiasedOrUnderperformingModel"
+    },
+    "PromoteModelToRegistry": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:PromoteModelRegistryAlias",
+        "Payload": {
+          "ModelName": "fraud-detection-xgb",
+          "ArtifactUri.$": "$.TrainingJobOutput.ModelArtifacts.S3ModelArtifacts",
+          "TargetAlias": "production"
+        }
+      },
+      "ResultPath": "$.PromotionResult",
+      "Next": "DeployToECSFargate"
+    },
+    "DeployToECSFargate": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:updateService",
+      "Parameters": {
+        "Cluster": "fraud-risk-mlops-cluster",
+        "Service": "fraud-inference-service",
+        "ForceNewDeployment": true
+      },
+      "ResultPath": "$.DeploymentResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["ECS.ServiceNotActiveException"],
+          "IntervalSeconds": 15,
+          "MaxAttempts": 3,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.ErrorDetails",
+          "Next": "PipelineFailureRollback"
+        }
+      ],
+      "Next": "NotifyPipelineSuccess"
+    },
+    "NotifyPipelineSuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:FraudMLOpsRetrainingAlerts",
+        "Subject": "SUCCESS: Fraud Model Retraining & Zero-Downtime Deployment Complete",
+        "Message": {
+          "Status": "COMPLETED",
+          "ExecutionId.$": "$$.Execution.Id",
+          "ModelVersion.$": "$.PromotionResult.Payload.Version",
+          "FairnessAudit": "PASSED (DI >= 0.80, |SPD| <= 0.10)",
+          "DeploymentTarget": "Amazon ECS Fargate Service (Active)"
+        }
+      },
+      "End": true
+    },
+    "RejectBiasedOrUnderperformingModel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:FraudMLOpsRetrainingAlerts",
+        "Subject": "ALERT: Retrained Model Rejected by Responsible AI Governance Gate",
+        "Message": {
+          "Status": "REJECTED",
+          "ExecutionId.$": "$$.Execution.Id",
+          "Reason": "Candidate model failed minimum F1 threshold (>= 0.80) or violated demographic parity (DI < 0.80).",
+          "Action": "Production ECS Fargate service preserved on Champion model. Zero downtime."
+        }
+      },
+      "Next": "FailExecution"
+    },
+    "PipelineFailureRollback": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:FraudMLOpsRetrainingAlerts",
+        "Subject": "CRITICAL: MLOps Retraining Pipeline Failed - Rollback Initiated",
+        "Message": {
+          "Status": "FAILED",
+          "ExecutionId.$": "$$.Execution.Id",
+          "ErrorDetails.$": "$.ErrorDetails"
+        }
+      },
+      "Next": "FailExecution"
+    },
+    "FailExecution": {
+      "Type": "Fail",
+      "Cause": "MLOps pipeline execution failed or was rejected by automated compliance gates.",
+      "Error": "RetrainingPipelineFailed"
+    }
+  }
+}

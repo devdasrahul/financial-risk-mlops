@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # -------------------------------------------------------------
+  # S3-Compatible Object Store (MinIO)
+  # -------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2024-03-05T04-48-44Z
+    container_name: mlops_minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Bucket Auto-Provisioner
+  minio-create-buckets:
+    image: minio/mc:RELEASE.2024-03-05T05-04-12Z
+    container_name: mlops_minio_init
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      sleep 2;
+      /usr/bin/mc alias set local http://minio:9000 minioadmin minioadminpassword;
+      /usr/bin/mc mb --ignore-existing local/mlflow-bucket;
+      /usr/bin/mc mb --ignore-existing local/fraud-data-bucket;
+      /usr/bin/mc anonymous set public local/mlflow-bucket;
+      /usr/bin/mc anonymous set public local/fraud-data-bucket;
+      exit 0;
+      "
+
+  # -------------------------------------------------------------
+  # PostgreSQL Backend Store for MLflow
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: mlops_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: mlflow_user
+      POSTGRES_PASSWORD: mlflow_password
+      POSTGRES_DB: mlflow_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow_user -d mlflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------
+  # MLflow Tracking & Model Registry Server
+  # -------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.11.3
+    container_name: mlops_mlflow
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadminpassword
+      AWS_DEFAULT_REGION: us-east-1
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://mlflow_user:mlflow_password@postgres:5432/mlflow_db
+      --default-artifact-root s3://mlflow-bucket/artifacts
+      --host 0.0.0.0
+      --port 5000
+
+  # -------------------------------------------------------------
+  # Prometheus Metrics Collector
+  # -------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: mlops_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./src/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  # -------------------------------------------------------------
+  # Grafana Dashboard UI
+  # -------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.1
+    container_name: mlops_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  # -------------------------------------------------------------
+  # FastAPI Fraud Prediction Microservice
+  # -------------------------------------------------------------
+  inference-service:
+    build:
+      context: .
+      dockerfile: src/inference/Dockerfile
+    container_name: mlops_inference_service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mlflow
+    environment:
+      - ENV=local
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadminpassword
+      - S3_BUCKET_NAME=fraud-data-bucket
+      - MODEL_NAME=fraud-detection-xgb
+      - MODEL_STAGE=Production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  minio_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

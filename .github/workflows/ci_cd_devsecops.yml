@@ -1,0 +1,135 @@
+name: DevSecOps CI/CD Pipeline - Financial Risk MLOps
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: fraud-risk-mlops-inference
+  ECS_SERVICE: fraud-risk-mlops-service
+  ECS_CLUSTER: fraud-risk-mlops-cluster
+  CONTAINER_NAME: inference-service
+
+jobs:
+  # ============================================================================
+  # Stage 1: Quality, Linting & Unit Testing Gate
+  # ============================================================================
+  test-and-lint:
+    name: Code Quality & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with Ruff
+        run: |
+          ruff check src/ tests/
+
+      - name: Run Unit Tests with Pytest
+        run: |
+          pytest -v --cov=src --cov-report=xml --cov-report=term tests/
+
+  # ============================================================================
+  # Stage 2: Shift-Left DevSecOps Vulnerability & IaC Scans
+  # ============================================================================
+  security-scan:
+    name: DevSecOps Security & IaC Scanning
+    runs-on: ubuntu-latest
+    needs: test-and-lint
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Aqua Security Trivy Filesystem Scan (Dependencies)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          severity: "HIGH,CRITICAL"
+          exit-code: "0" # Non-blocking on informational report
+          format: "table"
+
+      - name: Scan Terraform Configurations for Misconfigurations
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: "config"
+          scan-ref: "terraform/"
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"
+          format: "table"
+
+  # ============================================================================
+  # Stage 3: Container Build, Hardened Image Scan & ECR Push
+  # ============================================================================
+  build-and-push:
+    name: Docker Build & Image Security Scan
+    runs-on: ubuntu-latest
+    needs: security-scan
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Inference Container Image Locally
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/inference/Dockerfile
+          load: true
+          tags: ${{ env.ECR_REPOSITORY }}:${{ github.sha }},${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Scan Container Image with Trivy (Vulnerability Gate)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          scan-type: "image"
+          severity: "CRITICAL"
+          exit-code: "0" # Change to 1 in strict mode to block deployment on CRITICAL CVEs
+          format: "table"
+
+      - name: Configure AWS Credentials (OIDC or Secrets)
+        if: env.AWS_ACCESS_KEY_ID != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: env.AWS_ACCESS_KEY_ID != ''
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push Docker Image to Amazon ECR
+        if: env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker tag ${{ env.ECR_REPOSITORY }}:latest ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Deploy to Amazon ECS Fargate
+        if: env.AWS_ACCESS_KEY_ID != ''
+        run: |
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --force-new-deployment

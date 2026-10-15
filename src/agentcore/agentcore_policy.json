@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.aws.amazon.com/bedrock-agentcore/policy/v1.json",
+  "policyName": "FinancialRiskComplianceGuardrailsPolicy",
+  "version": "2026-10-15",
+  "description": "Amazon Bedrock AgentCore governance policy enforcing PII masking, permitted tool access, and prompt injection defense for financial risk triage.",
+  "guardrailConfiguration": {
+    "sensitiveInformationProtection": {
+      "piiEntities": [
+        {
+          "name": "CREDIT_DEBIT_CARD_NUMBER",
+          "action": "BLOCK_OR_MASK",
+          "maskPattern": "XXXX-XXXX-XXXX-[LAST4]"
+        },
+        {
+          "name": "US_SOCIAL_SECURITY_NUMBER",
+          "action": "BLOCK"
+        },
+        {
+          "name": "EMAIL_ADDRESS",
+          "action": "MASK"
+        },
+        {
+          "name": "PHONE_NUMBER",
+          "action": "MASK"
+        }
+      ],
+      "regexMaskRules": [
+        {
+          "name": "RawPANMasker",
+          "pattern": "\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\\b",
+          "replacement": "[PROTECTED_CARD_NUMBER]"
+        }
+      ]
+    },
+    "contentFilters": {
+      "promptInjectionProtection": {
+        "enabled": true,
+        "action": "REJECT_AND_LOG_ALERT",
+        "sensitivity": "HIGH"
+      },
+      "systemRoleImpersonationDefense": {
+        "enabled": true,
+        "action": "BLOCK"
+      }
+    },
+    "toolInvocationAccessControl": {
+      "allowedTools": [
+        "RetrievePolicyKnowledgeBase",
+        "GenerateComplianceDecisionMemo",
+        "LogComplianceAuditTrail"
+      ],
+      "deniedTools": [
+        "ExecuteDatabaseUpdate",
+        "ModifyModelParameters",
+        "DirectCustomerRefund",
+        "BypassApprovalPolicy"
+      ]
+    }
+  },
+  "auditLogging": {
+    "destination": "s3://fraud-detection-mlops-artifacts/compliance-audit-logs/",
+    "retentionDays": 2555,
+    "immutableWORM": true
+  }
+}

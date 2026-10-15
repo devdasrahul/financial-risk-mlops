@@ -1,0 +1,25 @@
+{
+  "dataset_hash": "835cfe7ca878a1a1287413a85a8dc26a480013da32ff052dcc259c29fb7fae0d",
+  "train_rows": 10500,
+  "val_rows": 2250,
+  "test_rows": 2250,
+  "reference_rows": 10500,
+  "features": [
+    "transaction_amount",
+    "card_velocity_1h",
+    "card_velocity_24h",
+    "distance_from_home_km",
+    "merchant_risk_score",
+    "is_international",
+    "device_trust_score",
+    "account_age_days",
+    "amount_per_velocity_1h",
+    "velocity_ratio_1h_to_24h",
+    "composite_risk_indicator"
+  ],
+  "protected_attributes": [
+    "customer_age_group"
+  ],
+  "target": "is_fraud",
+  "created_at": "2026-10-15T14:25:19.295013"
+}
