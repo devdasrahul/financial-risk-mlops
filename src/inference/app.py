@@ -151,6 +151,25 @@ def log_inference_payload(request_dict: dict[str, Any], prob: float, is_flagged:
             combined.to_parquet(log_file, index=False)
         else:
             new_row.to_parquet(log_file, index=False)
+        # Dual-mode S3 upload when running in AWS mode or with S3 credentials
+        env = os.getenv("ENV", "local")
+        bucket_name = os.getenv("S3_BUCKET_NAME", "fraud-data-bucket")
+        if env == "aws" or os.getenv("AWS_ACCESS_KEY_ID"):
+            try:
+                import boto3
+
+                s3_endpoint = os.getenv("AWS_ENDPOINT_URL") or os.getenv("MLFLOW_S3_ENDPOINT_URL")
+                s3 = boto3.client("s3", endpoint_url=s3_endpoint)
+                tx_id = request_dict.get("transaction_id", f"tx_{int(time.time()*1000)}")
+                s3_key = f"inference_logs/{datetime.now(timezone.utc).strftime('%Y/%m/%d')}/{tx_id}.json"
+                s3.put_object(
+                    Bucket=bucket_name,
+                    Key=s3_key,
+                    Body=json.dumps(log_record),
+                    ContentType="application/json",
+                )
+            except Exception as s3_err:
+                logger.debug(f"S3 inference payload upload skipped: {s3_err}")
     except Exception as e:
         logger.warning(f"Failed to append inference log: {e}")
 

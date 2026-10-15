@@ -181,6 +181,41 @@ class ComplianceTriageAgent:
             f"mandate requires: {matched_policy['recommended_action']}. Audit record permanently committed."
         )
 
+        if self.env == "aws" or os.getenv("AWS_ACCESS_KEY_ID"):
+            try:
+                import boto3
+
+                bedrock = boto3.client("bedrock-runtime", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+                model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
+                prompt = (
+                    f"You are an AI financial compliance officer and SAR investigator.\n"
+                    f"Analyze this high-risk transaction flag:\n"
+                    f"- Transaction ID: {transaction_id}\n"
+                    f"- Masked Cardholder: {safe_card}\n"
+                    f"- Model Fraud Probability: {fraud_probability*100:.1f}%\n"
+                    f"- Risk Tier: {risk_tier}\n"
+                    f"- TreeSHAP Key Risk Attributions: {shap_narrative}\n"
+                    f"- Applicable Regulation: {matched_policy['section']} ({matched_policy['policy_id']})\n"
+                    f"- Mandated Regulatory Action: {matched_policy['recommended_action']}\n\n"
+                    f"Synthesize an authoritative, auditable FinCEN compliance memo explaining the decision."
+                )
+                payload = {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 400,
+                    "temperature": 0.1,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                resp = bedrock.invoke_model(
+                    modelId=model_id,
+                    body=json.dumps(payload),
+                    contentType="application/json",
+                )
+                resp_json = json.loads(resp["body"].read())
+                compliance_narrative = resp_json["content"][0]["text"].strip()
+                logger.info(f"Successfully generated Bedrock AgentCore narrative via {model_id}")
+            except Exception as e:
+                logger.debug(f"Amazon Bedrock live invocation fallback to local RAG template: {e}")
+
         audit_memo = ComplianceAuditSummary(
             audit_triggered=True,
             risk_tier=risk_tier,
