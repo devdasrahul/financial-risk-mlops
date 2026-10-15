@@ -217,8 +217,10 @@ class ComplianceTriageAgent:
                 logger.debug(f"Amazon Bedrock live invocation fallback to local RAG template: {e}")
 
         audit_memo = ComplianceAuditSummary(
+            transaction_id=transaction_id,
             audit_triggered=True,
             risk_tier=risk_tier,
+            shap_explanation=shap_narrative,
             cited_policy_section=matched_policy["section"],
             recommended_action=matched_policy["recommended_action"],
             trace_id=trace_id,

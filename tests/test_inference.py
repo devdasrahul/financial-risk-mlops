@@ -90,10 +90,13 @@ def test_predict_high_risk_triggers_agentcore(client: TestClient):
     # Verify AgentCore compliance audit block is populated
     audit = data["compliance_audit"]
     assert audit is not None
+    assert audit["transaction_id"] == "TX_TEST_HIGH_002"
+    assert audit["risk_tier"] in ["HIGH", "CRITICAL"]
     assert audit["audit_triggered"] is True
     assert "FinCEN" in audit["cited_policy_section"] or "Cross-Border" in audit["cited_policy_section"]
     assert audit["recommended_action"] in ["SUSPEND_CARD", "STEP_UP_AUTH", "FILE_SAR"]
     assert "trace_id" in audit
+    assert audit["shap_explanation"] is not None and len(audit["shap_explanation"]) > 0
     assert len(audit["compliance_narrative"]) > 20
 
 
