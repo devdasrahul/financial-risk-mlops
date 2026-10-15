@@ -18,7 +18,7 @@ data "aws_subnets" "default" {
 # Security Groups
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "alb_sg" {
-  name        = "${var.project_name}-alb-sg"
+  name_prefix = "${var.project_name}-alb-sg-"
   description = "Allows public ingress on HTTP to the Application Load Balancer"
   vpc_id      = data.aws_vpc.default.id
 
@@ -36,10 +36,14 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_security_group" "ecs_tasks_sg" {
-  name        = "${var.project_name}-ecs-tasks-sg"
+  name_prefix = "${var.project_name}-ecs-tasks-sg-"
   description = "Allows ingress only from ALB on port 8000"
   vpc_id      = data.aws_vpc.default.id
 
@@ -57,13 +61,17 @@ resource "aws_security_group" "ecs_tasks_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # ------------------------------------------------------------------------------
 # Application Load Balancer (ALB) & Target Group
 # ------------------------------------------------------------------------------
 resource "aws_lb" "api_alb" {
-  name               = "${var.project_name}-alb"
+  name_prefix        = "alb-"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -71,11 +79,15 @@ resource "aws_lb" "api_alb" {
 }
 
 resource "aws_lb_target_group" "api_target_group" {
-  name        = "${var.project_name}-tg"
+  name_prefix = "tg-"
   port        = var.container_port
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   health_check {
     path                = "/health"

@@ -54,25 +54,33 @@ def cleanup_load_balancers(session: boto3.Session) -> None:
     # Delete Load Balancers
     alb_arn = None
     try:
-        lbs = elbv2.describe_load_balancers(Names=[f"{PROJECT_NAME}-alb"])
-        for lb in lbs.get("LoadBalancers", []):
-            alb_arn = lb["LoadBalancerArn"]
-            logger.info(f"Deleting ALB: {alb_arn}")
-            elbv2.delete_load_balancer(LoadBalancerArn=alb_arn)
+        lbs = elbv2.describe_load_balancers().get("LoadBalancers", [])
+        for lb in lbs:
+            if lb.get("LoadBalancerName", "").startswith(f"{PROJECT_NAME}-alb"):
+                alb_arn = lb["LoadBalancerArn"]
+                logger.info(f"Deleting ALB: {lb['LoadBalancerName']} ({alb_arn})")
+                elbv2.delete_load_balancer(LoadBalancerArn=alb_arn)
     except ClientError as e:
         logger.info(f"ALB cleanup note: {e}")
 
     if alb_arn:
-        logger.info("Waiting for ALB deletion to propagate before deleting Target Group...")
-        time.sleep(10)
+        try:
+            logger.info("Waiting for ALB deletion to complete and ENIs to detach...")
+            waiter = elbv2.get_waiter("load_balancers_deleted")
+            waiter.wait(LoadBalancerArns=[alb_arn], WaiterConfig={"Delay": 5, "MaxAttempts": 20})
+            logger.info("ALB successfully deleted and ENIs detached.")
+        except Exception as e:
+            logger.info(f"ALB waiter note: {e}")
+            time.sleep(15)
 
     # Delete Target Groups
     try:
-        tgs = elbv2.describe_target_groups(Names=[f"{PROJECT_NAME}-tg"])
-        for tg in tgs.get("TargetGroups", []):
-            tg_arn = tg["TargetGroupArn"]
-            logger.info(f"Deleting Target Group: {tg_arn}")
-            elbv2.delete_target_group(TargetGroupArn=tg_arn)
+        tgs = elbv2.describe_target_groups().get("TargetGroups", [])
+        for tg in tgs:
+            if tg.get("TargetGroupName", "").startswith(f"{PROJECT_NAME}-tg"):
+                tg_arn = tg["TargetGroupArn"]
+                logger.info(f"Deleting Target Group: {tg['TargetGroupName']} ({tg_arn})")
+                elbv2.delete_target_group(TargetGroupArn=tg_arn)
     except ClientError as e:
         logger.info(f"Target group cleanup note: {e}")
 
@@ -80,17 +88,43 @@ def cleanup_load_balancers(session: boto3.Session) -> None:
 def cleanup_security_groups(session: boto3.Session) -> None:
     logger.info("--- Cleaning up Security Groups ---")
     ec2 = session.client("ec2", region_name=REGION)
-    for sg_name in [f"{PROJECT_NAME}-ecs-tasks-sg", f"{PROJECT_NAME}-alb-sg"]:
-        try:
-            sgs = ec2.describe_security_groups(
-                Filters=[{"Name": "group-name", "Values": [sg_name]}]
-            )
-            for sg in sgs.get("SecurityGroups", []):
-                sg_id = sg["GroupId"]
+
+    try:
+        all_sgs = ec2.describe_security_groups().get("SecurityGroups", [])
+        matching_sgs = [sg for sg in all_sgs if sg.get("GroupName", "").startswith(PROJECT_NAME)]
+    except ClientError as e:
+        logger.info(f"Describe SG note: {e}")
+        return
+
+    # Step 1: Strip all ingress and egress rules to break cross-group dependencies
+    for sg in matching_sgs:
+        sg_id = sg["GroupId"]
+        if sg.get("IpPermissions"):
+            try:
+                logger.info(f"Revoking all ingress rules on {sg['GroupName']} ({sg_id})")
+                ec2.revoke_security_group_ingress(GroupId=sg_id, IpPermissions=sg["IpPermissions"])
+            except ClientError as e:
+                logger.info(f"Revoke ingress note: {e}")
+        if sg.get("IpPermissionsEgress"):
+            try:
+                logger.info(f"Revoking all egress rules on {sg['GroupName']} ({sg_id})")
+                ec2.revoke_security_group_egress(GroupId=sg_id, IpPermissions=sg["IpPermissionsEgress"])
+            except ClientError as e:
+                logger.info(f"Revoke egress note: {e}")
+
+    # Step 2: Delete security groups with retry backoff in case ENIs are still freeing
+    for sg in matching_sgs:
+        sg_id = sg["GroupId"]
+        sg_name = sg.get("GroupName", sg_id)
+        for attempt in range(6):
+            try:
                 logger.info(f"Deleting Security Group: {sg_name} ({sg_id})")
                 ec2.delete_security_group(GroupId=sg_id)
-        except ClientError as e:
-            logger.info(f"Security group {sg_name} cleanup note: {e}")
+                logger.info(f"Successfully deleted {sg_name}")
+                break
+            except ClientError as e:
+                logger.info(f"Attempt {attempt+1}/6 to delete {sg_name}: {e}")
+                time.sleep(5)
 
 
 def cleanup_step_functions_and_eventbridge(session: boto3.Session) -> None:
