@@ -188,7 +188,7 @@
     },
     "DeployToECSFargate": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::ecs:updateService",
+      "Resource": "arn:aws:states:::aws-sdk:ecs:updateService",
       "Parameters": {
         "Cluster": "fraud-risk-mlops-cluster",
         "Service": "fraud-inference-service",
