@@ -143,7 +143,7 @@ def train_model(
     val_file = Path(val_path)
 
     if not train_file.exists() or not val_file.exists():
-        raise FileNotFoundError(f"Training datasets missing. Please run data preprocessing first.")
+        raise FileNotFoundError("Training datasets missing. Please run data preprocessing first.")
 
     logger.info(f"Loading datasets: {train_file} and {val_file}")
     df_train = pd.read_parquet(train_file)
@@ -214,7 +214,7 @@ def train_model(
         mean_abs_shap = np.abs(shap_values).mean(axis=0)
         global_shap_importance = {
             col: float(val)
-            for col, val in sorted(zip(FEATURE_COLUMNS, mean_abs_shap), key=lambda x: x[1], reverse=True)
+            for col, val in sorted(zip(FEATURE_COLUMNS, mean_abs_shap, strict=False), key=lambda x: x[1], reverse=True)
         }
         logger.info(f"Top 3 Global SHAP Features: {list(global_shap_importance.keys())[:3]}")
 

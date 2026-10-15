@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -48,10 +47,6 @@ def generate_transactions(
 
     customer_age_map = {
         cid: np.random.choice(age_groups, p=age_weights) for cid in customer_ids
-    }
-    customer_home_coords = {
-        cid: (np.random.uniform(25.0, 48.0), np.random.uniform(-125.0, -70.0))
-        for cid in customer_ids
     }
 
     records: list[dict[str, Any]] = []

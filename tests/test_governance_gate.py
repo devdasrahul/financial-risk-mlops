@@ -35,7 +35,7 @@ def test_fairness_evaluation_passes_on_uniform_predictions(mock_evaluation_df: p
 
     assert fairness["gate_passed"] is True
     assert len(fairness["failure_reasons"]) == 0
-    for grp, metrics in fairness["groups"].items():
+    for _grp, metrics in fairness["groups"].items():
         assert metrics["disparate_impact_ratio"] >= 0.80
         assert abs(metrics["statistical_parity_difference"]) <= 0.10
 

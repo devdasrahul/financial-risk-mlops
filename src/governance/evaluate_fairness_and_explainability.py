@@ -175,10 +175,10 @@ def generate_model_card(
 
     md_content = f"""# Amazon SageMaker Model Card: Fraud Detection Risk Engine
 
-**Model Name:** `fraud-detection-xgb`  
-**Model Version:** `1.0.0`  
-**Audited Date:** `{created_at}`  
-**Dataset Lineage Hash:** `{ds_hash}`  
+**Model Name:** `fraud-detection-xgb`
+**Model Version:** `1.0.0`
+**Audited Date:** `{created_at}`
+**Dataset Lineage Hash:** `{ds_hash}`
 **Compliance Approval Status:** `{appr_status}`
 
 ---

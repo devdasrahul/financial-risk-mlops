@@ -5,7 +5,6 @@ import pytest
 
 from src.data.generate_synthetic_transactions import generate_transactions
 from src.data.preprocess import (
-    FEATURE_COLUMNS,
     compute_dataset_hash,
     engineer_features,
     split_data,

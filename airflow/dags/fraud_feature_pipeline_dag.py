@@ -10,8 +10,9 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+from airflow import DAG
 
 # Default task arguments adhering to enterprise production resilience standards
 default_args = {
@@ -28,6 +29,7 @@ default_args = {
 def task_ingest_raw_transactions(**context) -> str:
     """Ingest latest payment transactions from transactional database or message queue."""
     import logging
+
     from src.data.generate_synthetic_transactions import generate_transactions
 
     logger = logging.getLogger("airflow.task.ingest")
@@ -48,7 +50,9 @@ def task_ingest_raw_transactions(**context) -> str:
 def task_validate_data_schema(**context) -> bool:
     """Run schema validation and missing value checks on incoming batch."""
     import logging
+
     import pandas as pd
+
     from src.data.preprocess import validate_schema
 
     logger = logging.getLogger("airflow.task.validate")
@@ -65,6 +69,7 @@ def task_validate_data_schema(**context) -> bool:
 def task_engineer_features_and_split(**context) -> str:
     """Compute rolling window aggregations, chronological splits, and export Parquet partitions."""
     import logging
+
     from src.data.preprocess import run_pipeline
 
     logger = logging.getLogger("airflow.task.preprocess")
@@ -83,6 +88,7 @@ def task_engineer_features_and_split(**context) -> str:
 def task_upload_splits_to_s3(**context) -> str:
     """Upload processed training and reference Parquet splits to S3 / MinIO storage."""
     import logging
+
     import boto3
     from botocore.client import Config
 

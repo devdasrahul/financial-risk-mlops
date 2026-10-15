@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 
 from src.agentcore.compliance_triage_agent import (
     AgentCorePolicyEnforcer,
-    ComplianceTriageAgent,
     PolicyKnowledgeBaseRAG,
 )
 from src.inference.app import app

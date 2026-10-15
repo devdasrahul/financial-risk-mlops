@@ -17,10 +17,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import xgboost as xgb
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 from src.agentcore.compliance_triage_agent import ComplianceTriageAgent
@@ -230,7 +229,7 @@ def predict(tx: TransactionRequest, background_tasks: BackgroundTasks) -> Predic
         try:
             shap_vals = explainer.shap_values(input_df)[0]
             indexed_shap = sorted(
-                zip(FEATURE_COLUMNS, feature_values, shap_vals),
+                zip(FEATURE_COLUMNS, feature_values, shap_vals, strict=False),
                 key=lambda x: abs(x[2]),
                 reverse=True,
             )

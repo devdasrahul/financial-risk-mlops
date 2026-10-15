@@ -13,7 +13,6 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -103,6 +102,7 @@ def promote_champion_or_challenger(
 
     challenger_f1 = challenger_metrics.get("f1_score", 0.0)
     challenger_pr_auc = challenger_metrics.get("pr_auc", 0.0)
+    logger.info(f"Loaded Challenger Metrics - F1: {challenger_f1:.4f}, PR-AUC: {challenger_pr_auc:.4f}")
 
     # Fetch registered model versions
     try:
