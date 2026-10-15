@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Aqua Security Trivy Filesystem Scan (Dependencies)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -70,7 +70,7 @@ jobs:
           format: "table"
 
       - name: Scan Terraform Configurations for Misconfigurations
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: "config"
           scan-ref: "terraform/"
@@ -105,7 +105,7 @@ jobs:
           tags: ${{ env.ECR_REPOSITORY }}:${{ github.sha }},${{ env.ECR_REPOSITORY }}:latest
 
       - name: Scan Container Image with Trivy (Vulnerability Gate)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           scan-type: "image"
