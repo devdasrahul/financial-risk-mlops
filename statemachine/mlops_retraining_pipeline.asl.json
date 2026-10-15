@@ -33,7 +33,7 @@
     },
     "TrainChampionCandidateModel": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::sagemaker:createTrainingJob.sync",
+      "Resource": "arn:aws:states:::sagemaker:createTrainingJob",
       "Parameters": {
         "TrainingJobName.$": "States.Format('fraud-xgb-retrain-{}', $$.Execution.Name)",
         "AlgorithmSpecification": {
@@ -105,7 +105,7 @@
     },
     "EvaluateBiasAndExplainability": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::sagemaker:createProcessingJob.sync",
+      "Resource": "arn:aws:states:::sagemaker:createProcessingJob",
       "Parameters": {
         "ProcessingJobName.$": "States.Format('clarify-audit-{}', $$.Execution.Name)",
         "AppSpecification": {

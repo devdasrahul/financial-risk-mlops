@@ -119,11 +119,7 @@ resource "aws_iam_policy" "step_functions_policy" {
       {
         Effect = "Allow"
         Action = [
-          "events:PutTargets",
-          "events:PutRule",
-          "events:DescribeRule",
-          "events:DeleteRule",
-          "events:RemoveTargets"
+          "events:*"
         ]
         Resource = "*"
       },
