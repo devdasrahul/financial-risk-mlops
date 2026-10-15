@@ -164,7 +164,7 @@
             },
             {
               "Variable": "$.GovernanceResult.F1Score",
-              "NumericGreaterThanEquals": 0.80
+              "NumericGreaterThanEquals": 0.82
             }
           ],
           "Next": "PromoteModelToRegistry"
@@ -237,7 +237,7 @@
         "Message": {
           "Status": "REJECTED",
           "ExecutionId.$": "$$.Execution.Id",
-          "Reason": "Candidate model failed minimum F1 threshold (>= 0.80) or violated demographic parity (DI < 0.80).",
+          "Reason": "Candidate model failed minimum F1 threshold (>= 0.82) or violated demographic parity (DI < 0.80).",
           "Action": "Production ECS Fargate service preserved on Champion model. Zero downtime."
         }
       },

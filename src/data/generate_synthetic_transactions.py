@@ -170,13 +170,20 @@ def main() -> None:
     df = generate_transactions(num_samples=args.samples, inject_drift=args.inject_drift)
 
     if args.filename:
-        filename = args.filename
+        target_path = out_dir / args.filename
+        df.to_parquet(target_path, index=False)
+        logger.info(f"Dataset successfully written to: {target_path.resolve()}")
     else:
-        filename = "production_inference_logs.parquet" if args.inject_drift else "raw_transactions.parquet"
-
-    target_path = out_dir / filename
-    df.to_parquet(target_path, index=False)
-    logger.info(f"Dataset successfully written to: {target_path.resolve()}")
+        if args.inject_drift:
+            p1 = out_dir / "production_inference_logs.parquet"
+            p2 = out_dir / "drifted_stream.parquet"
+            df.to_parquet(p1, index=False)
+            df.to_parquet(p2, index=False)
+            logger.info(f"Drifted stream written to {p1.resolve()} and {p2.resolve()}")
+        else:
+            p = out_dir / "raw_transactions.parquet"
+            df.to_parquet(p, index=False)
+            logger.info(f"Dataset successfully written to: {p.resolve()}")
 
 
 if __name__ == "__main__":

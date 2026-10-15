@@ -1,5 +1,5 @@
 {
-  "analysis_timestamp": "2026-10-15T09:05:58.068383+00:00",
+  "analysis_timestamp": "2026-10-15T11:12:11.109660+00:00",
   "reference_rows": 10500,
   "current_inference_rows": 5000,
   "drift_share": 0.875,
@@ -15,14 +15,14 @@
     "account_age_days"
   ],
   "psi_metrics": {
-    "transaction_amount": 1.687,
-    "card_velocity_1h": 1.6644,
-    "card_velocity_24h": 3.8933,
-    "distance_from_home_km": 1.1769,
-    "merchant_risk_score": 6.3077,
+    "transaction_amount": 1.6924,
+    "card_velocity_1h": 1.6654,
+    "card_velocity_24h": 3.848,
+    "distance_from_home_km": 1.2014,
+    "merchant_risk_score": 6.2977,
     "is_international": 0.0,
-    "device_trust_score": 5.2073,
-    "account_age_days": 1.5109
+    "device_trust_score": 5.2013,
+    "account_age_days": 1.5032
   },
   "action_taken": "EVENTBRIDGE_RETRAINING_TRIGGERED"
 }
