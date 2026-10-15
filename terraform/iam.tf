@@ -119,6 +119,33 @@ resource "aws_iam_policy" "step_functions_policy" {
       {
         Effect = "Allow"
         Action = [
+          "events:PutTargets",
+          "events:PutRule",
+          "events:DescribeRule",
+          "events:DeleteRule",
+          "events:RemoveTargets"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogDelivery",
+          "logs:CreateLogStream",
+          "logs:GetLogDelivery",
+          "logs:UpdateLogDelivery",
+          "logs:DeleteLogDelivery",
+          "logs:ListLogDeliveries",
+          "logs:PutLogEvents",
+          "logs:PutResourcePolicy",
+          "logs:DescribeResourcePolicies",
+          "logs:DescribeLogGroups"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "ecs:UpdateService",
           "ecs:DescribeServices"
         ]

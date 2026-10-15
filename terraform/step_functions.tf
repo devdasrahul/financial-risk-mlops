@@ -22,4 +22,9 @@ resource "aws_sfn_state_machine" "mlops_retraining_pipeline" {
     include_execution_data = true
     level                  = "ALL"
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.step_functions_attach,
+    aws_cloudwatch_log_group.step_functions_logs
+  ]
 }
