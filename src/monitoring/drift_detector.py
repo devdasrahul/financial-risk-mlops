@@ -117,6 +117,21 @@ def dispatch_eventbridge_retraining_event(
     return dispatched_status
 
 
+def upload_report_to_s3(local_file_path: Path, s3_bucket: str, s3_key: str) -> bool:
+    """Upload diagnostic HTML/JSON report to S3 if credentials or AWS environment is present."""
+    env = os.getenv("ENV", "local")
+    if env == "aws" or os.getenv("AWS_ACCESS_KEY_ID"):
+        try:
+            s3_client = boto3.client("s3", region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+            s3_client.upload_file(str(local_file_path), s3_bucket, s3_key)
+            logger.info(f"Successfully uploaded {local_file_path.name} to s3://{s3_bucket}/{s3_key}")
+            return True
+        except (NoCredentialsError, ClientError) as e:
+            logger.warning(f"S3 upload to s3://{s3_bucket}/{s3_key} skipped ({e}). Stored locally.")
+            return False
+    return False
+
+
 def run_drift_analysis(
     reference_path: str = "data/reference_data.parquet",
     current_path: str = "data/production_inference_logs.parquet",
@@ -193,6 +208,11 @@ def run_drift_analysis(
 
     logger.info(f"Evidently AI HTML Report saved: {html_report_path.resolve()}")
     logger.info(f"Drift Summary JSON saved: {json_report_path.resolve()}")
+
+    # Upload reports to S3 if configured
+    s3_bucket = os.getenv("S3_BUCKET", "fraud-detection-mlops-artifacts")
+    upload_report_to_s3(html_report_path, s3_bucket, f"monitoring/reports/{html_report_path.name}")
+    upload_report_to_s3(json_report_path, s3_bucket, f"monitoring/reports/{json_report_path.name}")
 
     # Step-Function / EventBridge Trigger Decision
     if dataset_drift:
