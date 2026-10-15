@@ -4,7 +4,7 @@
     "model_version": "1.0.0",
     "model_type": "Gradient Boosted Decision Trees (XGBoost)",
     "intended_use": "Real-time payment transaction fraud classification and risk scoring",
-    "created_at": "2026-10-15T16:22:04.226884",
+    "created_at": "2026-10-15T16:27:09.094922",
     "regulatory_framework": "FinCEN AML / Bank Secrecy Act (BSA) & CFPB Model Explainability"
   },
   "data_lineage": {

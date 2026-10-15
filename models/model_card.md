@@ -2,7 +2,7 @@
 
 **Model Name:** `fraud-detection-xgb`
 **Model Version:** `1.0.0`
-**Audited Date:** `2026-10-15T16:22:04.226884`
+**Audited Date:** `2026-10-15T16:27:09.094922`
 **Dataset Lineage Hash:** `835cfe7ca878a1a1287413a85a8dc26a480013da32ff052dcc259c29fb7fae0d`
 **Compliance Approval Status:** `APPROVED`
 
@@ -12,7 +12,7 @@
 
 | Metric Name | Value | Production Threshold | Compliance Status |
 | :--- | :--- | :--- | :--- |
-| **F1 Score** | `1.0` | >= 0.8 | `PASS` |
+| **F1 Score** | `1.0` | >= 0.82 | `PASS` |
 | **PR-AUC (Precision-Recall AUC)** | `1.0` | >= 0.85 | `PASS` |
 | **ROC-AUC** | `1.0` | >= 0.90 | `PASS` |
 | **Precision** | `1.0` | >= 0.80 | `PASS` |

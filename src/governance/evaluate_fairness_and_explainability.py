@@ -39,7 +39,7 @@ PROTECTED_ATTRIBUTE = "customer_age_group"
 TARGET_COLUMN = "is_fraud"
 
 # Regulatory & compliance thresholds
-MIN_F1_THRESHOLD = 0.80
+MIN_F1_THRESHOLD = 0.82
 MIN_DISPARATE_IMPACT = 0.80
 MAX_STATISTICAL_PARITY_DIFF = 0.10
 
