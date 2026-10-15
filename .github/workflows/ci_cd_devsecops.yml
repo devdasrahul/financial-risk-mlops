@@ -4,17 +4,15 @@ on:
   push:
     branches: [main, master]
     paths-ignore:
-      - "README.md"
-      - "*.md"
-      - "terraform/**"
-      - ".github/workflows/terraform_deploy.yml"
+      - '**.md'
+      - 'terraform/**'
+      - 'docs/**'
   pull_request:
     branches: [main, master]
     paths-ignore:
-      - "README.md"
-      - "*.md"
-      - "terraform/**"
-      - ".github/workflows/terraform_deploy.yml"
+      - '**.md'
+      - 'terraform/**'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
